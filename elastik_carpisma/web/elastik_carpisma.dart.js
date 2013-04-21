@@ -3020,7 +3020,7 @@ $$.ElastikCarpismaDemosu = {"": "Object;oda,TOP_SAYISI,toplar,yuzey",
 };
 
 $$.ElastikCarpismaDemosu_sahneyiCiz_anon = {"": "Closure;this_0",
-  call$1: function(_) {
+  call$1: function(a) {
     return this.this_0.sahneyiCiz$0();
   }
 };
