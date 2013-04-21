@@ -1,5 +1,6 @@
 import 'dart:html';
 import 'dart:math';
+import 'dart:async';
 
 void main() {
   new ElastikCarpismaDemosu();
@@ -48,8 +49,8 @@ class ElastikCarpismaDemosu {
         toplar.add(top);
         k++;
       }
-    }
-    sahneyiCiz(0);
+    }    
+    sahneyiCiz();    
   }
   
   bool topUygunMu(Top yeniTop) {
@@ -62,7 +63,7 @@ class ElastikCarpismaDemosu {
     return true;
   }
   
-  void sahneyiCiz(num _) { 
+  void sahneyiCiz() { 
     
     // oda alanını temizle
     yuzey.clearRect(oda.x1, oda.y1, oda.x2, oda.y2);
@@ -84,8 +85,9 @@ class ElastikCarpismaDemosu {
     }    
     
     // Sahnenin tekrar çizilmesi isteğini tarayıcıya ilet.
-    // sahneyiCiz fonksiyonu mümkün olursa saniyede 60 kez çağrılacak. 
-    window.requestAnimationFrame(sahneyiCiz);
+    // Çizim bittiğinde tekrar çizim fonksiyonunu çağır.
+    Future<num> f = window.animationFrame; 
+    f.then((num a) => sahneyiCiz());
   }
   
   void topCiz(Top top) {
