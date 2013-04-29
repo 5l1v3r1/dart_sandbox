@@ -7,7 +7,7 @@ class DiagonalGaussian {
   List<double> means;
   List<double> variances;
   List<double> negativeHalfPrecisions;
-  double logPrecomputedDistance;
+  double C;
 
   DiagonalGaussian(this.means, this.variances) {
     // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
@@ -22,7 +22,7 @@ class DiagonalGaussian {
     for (double variance in variances) {
       val -= (0.5 * log(variance));
     }
-    logPrecomputedDistance = val;      
+    C = val;      
   }
 
   /// Calculates linear likelihood of a given vector.
@@ -32,7 +32,7 @@ class DiagonalGaussian {
         final double dif = data[i] - means[i];
         res += ((dif * dif) * negativeHalfPrecisions[i]);     
     }    
-    return logPrecomputedDistance + res;
+    return C + res;
   } 
 
   int get dimension => means.length;
@@ -49,14 +49,11 @@ class Gmm  {
     }
   }
   
-  final double LOG0 = log(0);
-  
   double score(List<double> data) {
-    double logSum = LOG0;
-    for (int i = 0; i < gaussians.length; ++i) {
-      var a = log(logSum);
+    double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+    for (int i = 1; i < gaussians.length; ++i) {
       var b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
-      logSum = b + log(1+exp(a-b));
+      result = b + log( 1 + exp(result-b));
     }
     return logSum;
   } 

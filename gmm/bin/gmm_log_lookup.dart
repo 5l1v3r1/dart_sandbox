@@ -8,7 +8,7 @@ class DiagonalGaussian {
   List<double> means;
   List<double> variances;
   List<double> negativeHalfPrecisions;
-  double logPrecomputedDistance;
+  double C;
 
   DiagonalGaussian(this.means, this.variances) {
     // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
@@ -23,7 +23,7 @@ class DiagonalGaussian {
     for (double variance in variances) {
       val -= (0.5 * log(variance));
     }
-    logPrecomputedDistance = val;      
+    C = val;      
   }
 
   /// Calculates linear likelihood of a given vector.
@@ -33,61 +33,67 @@ class DiagonalGaussian {
         final double dif = data[i] - means[i];
         res += ((dif * dif) * negativeHalfPrecisions[i]);     
     }    
-    return logPrecomputedDistance + res;
-  } 
-
-  int get dimension => means.length;
+    return C + res;
+  }
+  
+  /// Calculates linear likelihood of a given vector.
+  double likelihood(List<double> data) {
+    double result = 1.0;
+    for (int i = 0; i < means.length; i++) {      
+      double meanDif = data[i] - means[i];      
+      result *= (1 / sqrt(2 * PI * variances[i])) * 
+          exp(-0.5 * meanDif * meanDif / variances[i]);
+    }
+    return result;
+  }  
 }
 
 class Gmm  {
 
   List<double> mixtureWeights;
+  List<double> logMixtureWeights;  
   List<DiagonalGaussian> gaussians;
 
   Gmm(this.mixtureWeights, this.gaussians) {
+    this.logMixtureWeights = new List(mixtureWeights.length);
     for(int i = 0; i< mixtureWeights.length; i++) {
-      mixtureWeights[i] = log(mixtureWeights[i]);
+      logMixtureWeights[i] = log(mixtureWeights[i]);
     }
   }
-  
-  final double LOG0 = log(0);
-  
+
   double score(List<double> data) {
-    double result = LOG0;
+    double result = 0.0;
     for (int i = 0; i < gaussians.length; ++i) {
-      var b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
-      result = logSum(result,b);
+      result += mixtureWeights[i]*gaussians[i].likelihood(data);
     }
     return result;
   } 
+  
+  double scoreLogSum(List<double> data) {
+    double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
+    for (int i = 1; i < gaussians.length; ++i) {
+      var b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
+      result = b + log( 1 + exp(result-b));
+    }
+    return result;
+  }   
+  
+  double scoreLogSumLookup(List<double> data) {
+    double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
+    for (int i = 1; i < gaussians.length; ++i) {
+      var b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
+      result = logMath.logSum(result,b);
+    }
+    return result;
+  }
+  
 }
-
-const double _SCALE = 1000.0;
 
 LogMath logMath = new LogMath();
 
-/**
- * Calculates an approximation of log(a+b) when log(a) and log(b) are given using the formula
- * log(a+b) = log(b) + log(1 + exp(log(a)-log(b))) where log(b)>log(a)
- * This method is an approximation because it uses a lookup table for log(1 + exp(log(b)-log(a))) part
- * This is useful for log-probabilities where values vary between -30 < log(p) <= 0
- * if difference between values is larger than 20 (which means sum of the numbers will be very close to the larger
- * value in linear domain) large value is returned instead of the logSum calculation because effect of the other
- * value is negligible
- */
-double logSum(double logA, double logB) {
-  if (logA > logB) {
-    double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
-    return dif >= 20.0 ? logA : logA + logMath.logSumLookup[(dif * _SCALE).toInt()];
-  } else {
-    final double dif = logB - logA;
-    return dif >= 20.0 ? logB : logB + logMath.logSumLookup[(dif * _SCALE).toInt()];
-  }
-}
-
-double LN0 = log(0);
-
-class LogMath {  
+class LogMath {
+  
+  const double _SCALE = 1000.0;
   
   static final LogMath _singleton = new LogMath._internal();
   
@@ -101,5 +107,24 @@ class LogMath {
     for (int i = 0; i < logSumLookup.length; i++) {
       logSumLookup[i] = log(1.0 + exp(-i / _SCALE));
     }
-  }    
+  }
+  
+  /**
+   * Calculates an approximation of log(a+b) when log(a) and log(b) are given using the formula
+   * log(a+b) = log(b) + log(1 + exp(log(a)-log(b))) where log(b)>log(a)
+   * This method is an approximation because it uses a lookup table for log(1 + exp(log(b)-log(a))) part
+   * This is useful for log-probabilities where values vary between -30 < log(p) <= 0
+   * if difference between values is larger than 20 (which means sum of the numbers will be very close to the larger
+   * value in linear domain) large value is returned instead of the logSum calculation because effect of the other
+   * value is negligible
+   */
+  double logSum(double logA, double logB) {
+    if (logA > logB) {
+      double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
+      return dif >= 20.0 ? logA : logA + logSumLookup[(dif * _SCALE).toInt()];
+    } else {
+      final double dif = logB - logA;
+      return dif >= 20.0 ? logB : logB + logSumLookup[(dif * _SCALE).toInt()];
+    }
+  }  
 }

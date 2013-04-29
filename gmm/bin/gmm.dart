@@ -2,10 +2,9 @@ library gmm;
 
 import 'dart:math';
 import 'dart:typed_data';
-import 'gmm_log_lookup_typed.dart';
 //import 'gmm_log_lookup.dart';
-//import 'gmm_log1.dart';
-//import 'gmm_simd.dart';
+//import 'gmm_log_lookup_typed.dart';
+import 'gmm_simd.dart';
 
 Random random = new Random(0xbeefcafe);
 double _random() {
@@ -64,13 +63,13 @@ Float32x4List toFloat32x4List(List<double> list) {
 }
 
 Gmm getGmm(List<GaussData> gd) {
-  var gaussList = new List();
-  var weightList = new List();  
+  List<DiagonalGaussian> gaussList = new List(gd.length);
+  List<double> weightList = new List(gd.length);  
   for(int a = 0; a<gd.length; a++) {
-    //gaussList.add(new DiagonalGaussian(gd[a].means, gd[a].variances));    
-    gaussList.add(new DiagonalGaussian(gd[a].getMeansTyped(), gd[a].getVariancesTyped()));    
-    //gaussList.add(new DiagonalGaussian(gd[a].getMeansSimd(), gd[a].getVariancesSimd()));
-    weightList.add(gd[a].weight);       
+    //gaussList[a]= new DiagonalGaussian(gd[a].means, gd[a].variances);    
+    //gaussList[a] =  new DiagonalGaussian(gd[a].getMeansTyped(), gd[a].getVariancesTyped());    
+    gaussList[a] =  new DiagonalGaussian(gd[a].getMeansSimd(), gd[a].getVariancesSimd());
+    weightList[a]= gd[a].weight;       
   }
   return new Gmm(weightList, gaussList);
 }
@@ -133,8 +132,8 @@ main() {
     gmms[i]=getGmm(gaussDataList);
   } 
   //List<List<double>> dataLarge = new InputData.random(inputAmount,40).data;
-  List<Float32List> dataLarge = new InputData.random(inputAmount,40).getAsFloat32List();
-  //List<Float32x4List> dataLarge = new InputData.random(inputAmount,40).getAsFloat32x4List();  
+  //List<Float32List> dataLarge = new InputData.random(inputAmount,40).getAsFloat32List();
+  List<Float32x4List> dataLarge = new InputData.random(inputAmount,40).getAsFloat32x4List();  
 
   List<int> times = new List(iterationCount);
   print("calculating..");

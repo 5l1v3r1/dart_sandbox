@@ -19,8 +19,6 @@ class DiagonalGaussian {
     }
     return result;
   }
-
-  int get dimension => means.length;
 }
 
 class Gmm  {
