@@ -1,3 +1,5 @@
+library gmm_base; 
+
 import 'dart:math';
 
 class DiagonalGaussian {
