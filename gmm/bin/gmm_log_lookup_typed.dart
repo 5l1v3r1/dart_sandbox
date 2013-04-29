@@ -1,7 +1,7 @@
 library gmm_log_lookup_typed;
 
 import 'dart:math';
-import 'dart:typeddata';
+import 'dart:typed_data';
 
 class DiagonalGaussian {
 
@@ -41,10 +41,11 @@ class DiagonalGaussian {
 
 class Gmm  {
 
-  List<double> mixtureWeights;
+  Float64List mixtureWeights;
   List<DiagonalGaussian> gaussians;
 
   Gmm(this.mixtureWeights, this.gaussians) {
+    this.mixtureWeights = new Float64List.fromList(mixtureWeights);
     for(int i = 0; i< mixtureWeights.length; i++) {
       mixtureWeights[i] = log(mixtureWeights[i]);
     }
