@@ -66,11 +66,10 @@ class LinearGmm  {
 
 class LogGmm  {
 
-  List<double> mixtureWeights;
   List<double> logMixtureWeights;  
   List<ListDiagonalGaussian> gaussians;
 
-  LogGmm(this.mixtureWeights, this.gaussians) {
+  LogGmm(List<double> mixtureWeights, this.gaussians) {
     this.logMixtureWeights = new List(mixtureWeights.length);
     for(int i = 0; i< mixtureWeights.length; i++) {
       logMixtureWeights[i] = log(mixtureWeights[i]);
@@ -81,19 +80,18 @@ class LogGmm  {
     double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
     for (int i = 1; i < gaussians.length; ++i) {
       var b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
-      result = b + log( 1 + exp(result-b));
+      result = b + log(1 + exp(result-b));
     }
     return result;
   }  
- }
+}
 
 class LogsumLookupGmm  {
 
-  List<double> mixtureWeights;
   List<double> logMixtureWeights;  
   List<ListDiagonalGaussian> gaussians;
 
-  LogsumLookupGmm(this.mixtureWeights, this.gaussians) {
+  LogsumLookupGmm(List<double> mixtureWeights, this.gaussians) {
     this.logMixtureWeights = new List(mixtureWeights.length);
     for(int i = 0; i< mixtureWeights.length; i++) {
       logMixtureWeights[i] = log(mixtureWeights[i]);

@@ -196,7 +196,7 @@ public class GmmTest {
 
         double scoreLogSum(double[] data) {
             double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
-            for (int i = 0; i < gaussians.length; ++i) {
+            for (int i = 1; i < gaussians.length; ++i) {
                 double b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
                 result = LogMath.logSum(result, b);
             }
