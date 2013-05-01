@@ -9,7 +9,7 @@ class SimdDiagonalGaussian {
   Float32x4List means;
   Float32x4List variances;
   Float32x4List negativeHalfPrecisions;
-  double logPrecomputedDistance;
+  double C;
 
   SimdDiagonalGaussian(List<double> _means, List<double> _variances) {
     
@@ -29,7 +29,7 @@ class SimdDiagonalGaussian {
     for (double variance in _variances) {
         val -= (0.5 * log(variance));
     }
-    logPrecomputedDistance = val;     
+    C = val;     
   }
 
   /// Calculates linear likelihood of a given vector.
@@ -39,10 +39,8 @@ class SimdDiagonalGaussian {
         final Float32x4 dif = data[i] - means[i];
         res += ((dif * dif) * negativeHalfPrecisions[i]);     
     }    
-    return logPrecomputedDistance + res.x + res.y + res.w + res.z;
+    return C + res.x + res.y + res.w + res.z;
   } 
-
-  int get dimension => means.length;
 }
 
 class SimdGmm  {

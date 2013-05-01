@@ -6,6 +6,34 @@ import 'gmm_list_based.dart';
 import 'gmm_typed_data.dart';
 import 'gmm_simd.dart';
 
+int gmmCount = 1000;
+int gaussPerGmm = 8;
+int dimension = 40;
+
+main() {  
+  print("Warm-up");
+  testAll(1, 3);
+  print("Testing...");
+  testAll(1000, 7);
+  print("Done.");
+}
+
+testAll(int inputLength, int iterationCount) {
+
+  InputData input = new InputData.random(inputLength , dimension);
+  // below test is commented out because it is too slow.
+  //print("Linear Gmm , List<double>");
+  //test(input.data, getLinearGmms(), inputLength, iterationCount);
+  print("Log Gmm, List<double>");
+  test(input.data, getLogGmms(), inputLength, iterationCount);
+  print("Log Gmm with Logsum lookup, List<double>");
+  test(input.data, getLogsumLookupGmms(), inputLength, iterationCount);  
+  print("Log Gmm with Logsum lookup, Typed Data");  
+  test(input.getAsFloat32List(), getTypedGmms(), inputLength, iterationCount);  
+  print("Log Gmm with Logsum lookup, SIMD");  
+  test(input.getAsFloat32x4List(), getSimdGmms(), inputLength, iterationCount);  
+}
+
 Random random = new Random(0xbeefcafe);
 double _random() {
     return random.nextInt(10) / 10 + 0.1;
@@ -162,33 +190,3 @@ test(List<List> data, List gmms, int inputAmount, int iterationCount) {
   print("mean = ${tot/(iterationCount-2).toDouble()}");
   print("");
 }
-
-int gmmCount = 1000;
-int gaussPerGmm = 8;
-int dimension = 40;
-
-testAll(int inputLength, int iterationCount) {
-
-  InputData input = new InputData.random(inputLength , dimension);
-  // below test is commented out because it is too slow.
-  // print("Linear Gmm , List<double>");
-  // test(input.data, getLinearGmms(), inputLength, iterationCount);
-  print("Log Gmm, List<double>");
-  test(input.data, getLogGmms(), inputLength, iterationCount);
-  print("Log Gmm with Logsum lookup, List<double>");
-  test(input.data, getLogsumLookupGmms(), inputLength, iterationCount);  
-  print("Log Gmm with Logsum lookup, Typed Data");  
-  test(input.getAsFloat32List(), getTypedGmms(), inputLength, iterationCount);  
-  print("Log Gmm with Logsum lookup, SIMD");  
-  test(input.getAsFloat32x4List(), getSimdGmms(), inputLength, iterationCount);  
-}
-
-
-main() {  
-  print("Warm-up");
-  testAll(1,3);
-  print("Testing...");
-  testAll(1000,7);
-  print("Done.");
-}
-

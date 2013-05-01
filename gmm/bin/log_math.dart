@@ -5,12 +5,12 @@ final LogMath logMath = new LogMath();
 
 class LogMath {  
 
-  const double _SCALE = 1000.0;  
+  const _SCALE = 1000.0;  
   
-  static final LogMath _singleton = new LogMath._internal();
+  static final _singleton = new LogMath._internal();
   
-  final List<double> logSumLookup = new List<double>(20000);
-  final Float32List logSumLookupTyped = new Float32List(20000);
+  final logSumLookup = new List<double>(20000);
+  final logSumLookupTyped = new Float32List(20000);
   
   factory LogMath() {
     return _singleton;
@@ -25,21 +25,21 @@ class LogMath {
   
   double logSum(double logA, double logB) {
     if (logA > logB) {
-      double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
-      return dif >= 20.0 ? logA : logA + logSumLookup[(dif * _SCALE).toInt()];
+      int index = ((logA - logB) * _SCALE).toInt(); 
+      return index >= 20000 ? logA : logA + logSumLookup[index];
     } else {
-      final double dif = logB - logA;
-      return dif >= 20.0 ? logB : logB + logSumLookup[(dif * _SCALE).toInt()];
+      int index = ((logB - logA) * _SCALE).toInt(); 
+      return index >= 20000 ? logB : logB + logSumLookup[index];
     }
   }  
   
   double logSumTyped(double logA, double logB) {
     if (logA > logB) {
-      double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
-      return dif >= 20.0 ? logA : logA + logSumLookupTyped[(dif * _SCALE).toInt()];
+      int index = ((logA - logB) * _SCALE).toInt(); 
+      return index >= 20000 ? logA : logA + logSumLookupTyped[index];
     } else {
-      final double dif = logB - logA;
-      return dif >= 20.0 ? logB : logB + logSumLookupTyped[(dif * _SCALE).toInt()];
+      int index = ((logB - logA) * _SCALE).toInt(); 
+      return index >= 20000 ? logB : logB + logSumLookupTyped[index];
     }
   }   
 }
