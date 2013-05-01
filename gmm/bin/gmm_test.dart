@@ -2,8 +2,8 @@ library gmm;
 
 import 'dart:math';
 import 'dart:typed_data';
-import 'gmm_log_lookup.dart';
-import 'gmm_log_lookup_typed.dart';
+import 'gmm_list_based.dart';
+import 'gmm_typed_data.dart';
 import 'gmm_simd.dart';
 
 Random random = new Random(0xbeefcafe);

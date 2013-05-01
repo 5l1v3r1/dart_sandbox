@@ -3,7 +3,6 @@ library gmm_simd;
 import 'dart:math';
 import 'dart:typed_data';
 import 'log_math.dart';
-import 'gmm.dart';
 
 class SimdDiagonalGaussian {
 
