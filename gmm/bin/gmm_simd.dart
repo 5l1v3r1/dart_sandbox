@@ -2,15 +2,21 @@ library gmm_simd;
 
 import 'dart:math';
 import 'dart:typed_data';
+import 'log_math.dart';
+import 'gmm.dart';
 
-class DiagonalGaussian {
+class SimdDiagonalGaussian {
 
   Float32x4List means;
   Float32x4List variances;
   Float32x4List negativeHalfPrecisions;
   double logPrecomputedDistance;
 
-  DiagonalGaussian(this.means, this.variances) {
+  SimdDiagonalGaussian(List<double> _means, List<double> _variances) {
+    
+    this.means = toFloat32x4List(_means);
+    this.variances = toFloat32x4List(_variances);    
+    
     // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
     negativeHalfPrecisions = new Float32x4List(means.length);
     for (int i = 0; i < negativeHalfPrecisions.length; i++) {
@@ -20,9 +26,8 @@ class DiagonalGaussian {
  
     // calculate the precomputed distance.
     // -0.5*SUM[d=1..D] ( log(2*PI) + log(var[d]) ) = -0.5*log(2*PI)*D -0.5 SUM[d=1..D](log(var[d]))
-    List<double> variances = toDoubleList(this.variances);
-    double val = -0.5 * log(2 * PI) * variances.length;
-    for (double variance in variances) {
+    double val = -0.5 * log(2 * PI) * _variances.length;
+    for (double variance in _variances) {
         val -= (0.5 * log(variance));
     }
     logPrecomputedDistance = val;     
@@ -41,12 +46,12 @@ class DiagonalGaussian {
   int get dimension => means.length;
 }
 
-class Gmm  {
+class SimdGmm  {
 
   Float64List mixtureWeights;
-  List<DiagonalGaussian> gaussians;
+  List<SimdDiagonalGaussian> gaussians;
 
-  Gmm(List<double> mixtureWeights, this.gaussians) {
+  SimdGmm(List<double> mixtureWeights, this.gaussians) {
     this.mixtureWeights = new Float64List.fromList(mixtureWeights);
     for(int i = 0; i< mixtureWeights.length; i++) {
       mixtureWeights[i] = log(mixtureWeights[i]);
@@ -57,7 +62,7 @@ class Gmm  {
     double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);    
     for (int i = 1; i < gaussians.length; ++i) {
       double b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
-      result = logMath.logSum(result,b);
+      result = logMath.logSumTyped(result,b);
     }
     return result;
   } 
@@ -73,43 +78,16 @@ List<double> toDoubleList(Float32x4List lst) {
   }
   return result;
 }
- 
-final LogMath logMath = new LogMath();
 
-class LogMath {  
-
-  const double _SCALE = 1000.0;  
-  
-  static final LogMath _singleton = new LogMath._internal();
-  
-  final logSumLookup = new Float32List(20000);
-  
-  factory LogMath() {
-    return _singleton;
-  }
-  
-  LogMath._internal() {
-    for (int i = 0; i < logSumLookup.length; i++) {
-      logSumLookup[i] = log(1.0 + exp(-i / _SCALE));
-    }
-  }
-  
-  /**
-   * Calculates an approximation of log(a+b) when log(a) and log(b) are given using the formula
-   * log(a+b) = log(b) + log(1 + exp(log(a)-log(b))) where log(b)>log(a)
-   * This method is an approximation because it uses a lookup table for log(1 + exp(log(b)-log(a))) part
-   * This is useful for log-probabilities where values vary between -30 < log(p) <= 0
-   * if difference between values is larger than 20 (which means sum of the numbers will be very close to the larger
-   * value in linear domain) large value is returned instead of the logSum calculation because effect of the other
-   * value is negligible
-   */
-  double logSum(double logA, double logB) {
-    if (logA > logB) {
-      double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
-      return dif >= 20.0 ? logA : logA + logSumLookup[(dif * _SCALE).toInt()];
-    } else {
-      final double dif = logB - logA;
-      return dif >= 20.0 ? logB : logB + logSumLookup[(dif * _SCALE).toInt()];
-    }
+Float32x4List toFloat32x4List(List<double> list) {
+  int dsize = list.length~/4;
+  Float32x4List res = new Float32x4List(dsize);
+  for (int j = 0; j < dsize; j++) {        
+    res[j] = new Float32x4(
+        list[j*4],
+        list[j*4+1],
+        list[j*4+2],
+        list[j*4+3]);        
   }  
+  return res;
 }
