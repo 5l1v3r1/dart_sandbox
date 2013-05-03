@@ -45,7 +45,7 @@ class TypedGmm  {
   Float64List mixtureWeights;
   List<TypedDiagonalGaussian> gaussians;
 
-  TypedGmm(this.mixtureWeights, this.gaussians) {
+  TypedGmm(List<double> mixtureWeights, this.gaussians) {
     this.mixtureWeights = new Float64List.fromList(mixtureWeights);
     for(int i = 0; i< mixtureWeights.length; i++) {
       mixtureWeights[i] = log(mixtureWeights[i]);
