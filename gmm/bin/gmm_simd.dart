@@ -7,14 +7,13 @@ import 'log_math.dart';
 class SimdDiagonalGaussian {
 
   Float32x4List means;
-  Float32x4List variances;
   Float32x4List negativeHalfPrecisions;
   double C;
 
   SimdDiagonalGaussian(List<double> _means, List<double> _variances) {
     
     this.means = toFloat32x4List(_means);
-    this.variances = toFloat32x4List(_variances);    
+    Float32x4List variances = toFloat32x4List(_variances);    
     
     // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
     negativeHalfPrecisions = new Float32x4List(means.length);

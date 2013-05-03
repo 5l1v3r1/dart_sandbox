@@ -7,13 +7,11 @@ import 'log_math.dart';
 class TypedDiagonalGaussian {
 
   Float32List means;
-  Float32List variances;
   Float32List negativeHalfPrecisions;
   double C;
 
   TypedDiagonalGaussian(List<double> means, List<double> variances) {
     this.means = new Float32List.fromList(means); 
-    this.variances = new Float32List.fromList(variances);
 
     // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
     // This saves 1 mul 1 div operation.    

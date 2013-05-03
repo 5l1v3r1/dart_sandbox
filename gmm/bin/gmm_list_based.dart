@@ -6,11 +6,10 @@ import 'log_math.dart';
 class ListDiagonalGaussian {
 
   List<double> means;
-  List<double> variances;
   List<double> negativeHalfPrecisions;
   double C;
 
-  ListDiagonalGaussian(this.means, this.variances) {
+  ListDiagonalGaussian(this.means, List<double> variances) {
     // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
     // This saves 1 mul 1 div operation.
     negativeHalfPrecisions = new List<double>(variances.length);
