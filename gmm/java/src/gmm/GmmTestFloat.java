@@ -3,7 +3,7 @@ package gmm;
 import java.util.Arrays;
 import java.util.Random;
 
-public class GmmTest {
+public class GmmTestFloat {
 
     public static void main(String[] args) {
 
@@ -23,12 +23,12 @@ public class GmmTest {
             gmms[i] = getGmm(gaussDataList);
         }
 
-        double[][] dataLarge = InputData.random(inputAmount, 40).data;
+        float[][] dataLarge = InputData.random(inputAmount, 40).data;
         long[] times = new long[iterationCount];
         System.out.println("calculating..");
         for (int it = 0; it < iterationCount; it++) {
             long start = System.currentTimeMillis();
-            double total = 0.0;
+            float total = 0.0f;
             for (int i = 0; i < inputAmount; i++) {
                 for (int j = 0; j < gmmCount; j++) {
                    // total += gmms[j].scoreLinear(dataLarge[i]);
@@ -43,17 +43,17 @@ public class GmmTest {
         }
 
         Arrays.sort(times);
-        double tot = 0.0;
+        float tot = 0.0f;
         for (int it = 0; it < iterationCount; it++) {
             if (it != 0 && it != iterationCount - 1)
                 tot = tot + times[it];
         }
-        System.out.println("mean =" + tot / ((double) iterationCount - 2));
+        System.out.println("mean =" + tot / ((float) iterationCount - 2));
     }
 
     static Gmm getGmm(GaussData[] gd) {
         DiagonalGaussian[] gaussList = new DiagonalGaussian[gd.length];
-        double[] weightList = new double[gd.length];
+        float[] weightList = new float[gd.length];
         for (int a = 0; a < gd.length; a++) {
             gaussList[a] = new DiagonalGaussian(gd[a].means, gd[a].variances);
             weightList[a] = gd[a].weight;
@@ -63,17 +63,17 @@ public class GmmTest {
 
     static Random rnd = new Random(0xbeefcafe);
 
-    static double _random() {
-        return rnd.nextDouble() + 0.1;
+    static float _random() {
+        return rnd.nextFloat() + 0.1f;
     }
 
     static class GaussData {
-        double[] means;
-        double[] variances;
+        float[] means;
+        float[] variances;
         int dimension;
-        double weight;
+        float weight;
 
-        GaussData(double[] means, double[] variances, double weight) {
+        GaussData(float[] means, float[] variances, float weight) {
             this.means = means;
             this.variances = variances;
             this.dimension = means.length;
@@ -81,32 +81,32 @@ public class GmmTest {
         }
 
         static GaussData random(int dimension) {
-            double[] means = new double[dimension];
-            double[] variances = new double[dimension];
+            float[] means = new float[dimension];
+            float[] variances = new float[dimension];
             for (int i = 0; i < dimension; i++) {
                 means[i] = _random();
                 variances[i] = _random();
             }
-            double weight = _random();
+            float weight = _random();
             return new GaussData(means, variances, weight);
         }
     }
 
     static class InputData {
-        double[][] data;
+        float[][] data;
         int size;
         int dimension;
 
-        InputData(double[][] data, int size, int dimension) {
+        InputData(float[][] data, int size, int dimension) {
             this.data = data;
             this.size = size;
             this.dimension = dimension;
         }
 
         static InputData random(int size, int dimension) {
-            double[][] data = new double[size][];
+            float[][] data = new float[size][];
             for (int i = 0; i < data.length; i++) {
-                data[i] = new double[dimension];
+                data[i] = new float[dimension];
                 for (int j = 0; j < dimension; j++) {
                     data[i][j] = _random();
                 }
@@ -116,34 +116,34 @@ public class GmmTest {
     }
 
     static class DiagonalGaussian {
-        double[] means;
-        double[] variances;
-        double[] negativeHalfPrecisions;
-        double C;
+        float[] means;
+        float[] variances;
+        float[] negativeHalfPrecisions;
+        float C;
 
-        DiagonalGaussian(double[] means, double[] variances) {
+        DiagonalGaussian(float[] means, float[] variances) {
             this.means = means;
             this.variances = variances;
             // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
             // This saves 1 mul 1 div operation.
-            negativeHalfPrecisions = new double[variances.length];
+            negativeHalfPrecisions = new float[variances.length];
             for (int i = 0; i < negativeHalfPrecisions.length; i++) {
-                negativeHalfPrecisions[i] = -0.5 / variances[i];
+                negativeHalfPrecisions[i] = -0.5f / variances[i];
             }
             // calculate the precomputed distance.
             // -0.5*SUM[d=1..D] ( log(2*PI) + log(var[d]) ) = -0.5*log(2*PI)*D -0.5 SUM[d=1..D](log(var[d]))
-            double val = -0.5 * Math.log(2 * Math.PI) * variances.length;
-            for (double variance : variances) {
+            float val = (float) (-0.5 * Math.log(2 * Math.PI) * variances.length);
+            for (float variance : variances) {
                 val -= (0.5 * Math.log(variance));
             }
             C = val;
         }
 
         /// Calculates linear likelihood of a given vector.
-        double likelihood(double[] data) {
-            double result = 1.0;
+        float likelihood(float[] data) {
+            float result = 1.0f;
             for (int i = 0; i < means.length; i++) {
-                double meanDif = data[i] - means[i];
+                float meanDif = data[i] - means[i];
                 result *= (1 / Math.sqrt(2 * Math.PI * variances[i])) *
                         Math.exp(-0.5 * meanDif * meanDif / variances[i]);
             }
@@ -151,10 +151,10 @@ public class GmmTest {
         }
 
         /// Calculates linear likelihood of a given vector.
-        double logLikelihood(double[] data) {
-            double res = 0.0;
+        float logLikelihood(float[] data) {
+            float res = 0.0f;
             for (int i = 0; i < means.length; i++) {
-                final double dif = data[i] - means[i];
+                final float dif = data[i] - means[i];
                 res += ((dif * dif) * negativeHalfPrecisions[i]);
             }
             return C + res;
@@ -164,40 +164,40 @@ public class GmmTest {
 
     static class Gmm {
 
-        double[] mixtureWeights;
-        double[] logMixtureWeights;
+        float[] mixtureWeights;
+        float[] logMixtureWeights;
         DiagonalGaussian[] gaussians;
 
-        Gmm(double[] mixtureWeights, DiagonalGaussian[] gaussians) {
+        Gmm(float[] mixtureWeights, DiagonalGaussian[] gaussians) {
             this.mixtureWeights = mixtureWeights;
             this.gaussians = gaussians;
-            logMixtureWeights = new double[mixtureWeights.length];
+            logMixtureWeights = new float[mixtureWeights.length];
             for (int i = 0; i < mixtureWeights.length; i++) {
-                logMixtureWeights[i] = Math.log(mixtureWeights[i]);
+                logMixtureWeights[i] = (float) Math.log(mixtureWeights[i]);
             }
         }
 
-        double scoreLinear(double[] data) {
-            double sum = 0.0;
+        float scoreLinear(float[] data) {
+            float sum = 0.0f;
             for (int i = 0; i < gaussians.length; ++i) {
                 sum += mixtureWeights[i] * gaussians[i].likelihood(data);
             }
             return sum;
         }
 
-        double scoreLog(double[] data) {
-            double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+        float scoreLog(float[] data) {
+            float result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
             for (int i = 1; i < gaussians.length; ++i) {
-                double b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
-                result = b + Math.log(1 + Math.exp(result - b));
+                float b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
+                result = (float) (b + Math.log(1 + Math.exp(result - b)));
             }
             return result;
         }
 
-        double scoreLogSum(double[] data) {
-            double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+        float scoreLogSum(float[] data) {
+            float result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
             for (int i = 1; i < gaussians.length; ++i) {
-                double b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
+                float b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
                 result = LogMath.logSum(result, b);
             }
             return result;
@@ -207,13 +207,13 @@ public class GmmTest {
 
     static class LogMath {
 
-        static final double _SCALE = 1000.0;
+        static final float _SCALE = 1000.0f;
 
-        static double[] logSumLookup = new double[20000];
+        static float[] logSumLookup = new float[20000];
 
         static {
             for (int i = 0; i < logSumLookup.length; i++) {
-                logSumLookup[i] = Math.log(1.0 + Math.exp(-i / _SCALE));
+                logSumLookup[i] = (float) Math.log(1.0 + Math.exp(-i / _SCALE));
             }
         }
 
@@ -226,12 +226,12 @@ public class GmmTest {
          * value in linear domain) large value is returned instead of the logSum calculation because effect of the other
          * value is negligible
          */
-        static double logSum(double logA, double logB) {
+        static float logSum(float logA, float logB) {
             if (logA > logB) {
-                double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
+                float dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
                 return dif >= 20.0 ? logA : logA + logSumLookup[(int) (dif * _SCALE)];
             } else {
-                final double dif = logB - logA;
+                float dif = logB - logA;
                 return dif >= 20.0 ? logB : logB + logSumLookup[(int) (dif * _SCALE)];
             }
         }
