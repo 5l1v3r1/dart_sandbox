@@ -117,13 +117,11 @@ public class GmmTestFloat {
 
     static class DiagonalGaussian {
         float[] means;
-        float[] variances;
         float[] negativeHalfPrecisions;
         float C;
 
         DiagonalGaussian(float[] means, float[] variances) {
             this.means = means;
-            this.variances = variances;
             // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
             // This saves 1 mul 1 div operation.
             negativeHalfPrecisions = new float[variances.length];
@@ -140,21 +138,10 @@ public class GmmTestFloat {
         }
 
         /// Calculates linear likelihood of a given vector.
-        float likelihood(float[] data) {
-            float result = 1.0f;
+        double logLikelihood(float[] data) {
+            double res = 0.0f;
             for (int i = 0; i < means.length; i++) {
-                float meanDif = data[i] - means[i];
-                result *= (1 / Math.sqrt(2 * Math.PI * variances[i])) *
-                        Math.exp(-0.5 * meanDif * meanDif / variances[i]);
-            }
-            return result;
-        }
-
-        /// Calculates linear likelihood of a given vector.
-        float logLikelihood(float[] data) {
-            float res = 0.0f;
-            for (int i = 0; i < means.length; i++) {
-                final float dif = data[i] - means[i];
+                final double dif = data[i] - means[i];
                 res += ((dif * dif) * negativeHalfPrecisions[i]);
             }
             return C + res;
@@ -164,12 +151,10 @@ public class GmmTestFloat {
 
     static class Gmm {
 
-        float[] mixtureWeights;
         float[] logMixtureWeights;
         DiagonalGaussian[] gaussians;
 
         Gmm(float[] mixtureWeights, DiagonalGaussian[] gaussians) {
-            this.mixtureWeights = mixtureWeights;
             this.gaussians = gaussians;
             logMixtureWeights = new float[mixtureWeights.length];
             for (int i = 0; i < mixtureWeights.length; i++) {
@@ -177,27 +162,19 @@ public class GmmTestFloat {
             }
         }
 
-        float scoreLinear(float[] data) {
-            float sum = 0.0f;
-            for (int i = 0; i < gaussians.length; ++i) {
-                sum += mixtureWeights[i] * gaussians[i].likelihood(data);
-            }
-            return sum;
-        }
-
-        float scoreLog(float[] data) {
-            float result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+        double scoreLog(float[] data) {
+            double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
             for (int i = 1; i < gaussians.length; ++i) {
-                float b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
+                double b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
                 result = (float) (b + Math.log(1 + Math.exp(result - b)));
             }
             return result;
         }
 
-        float scoreLogSum(float[] data) {
-            float result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+        double scoreLogSum(float[] data) {
+            double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
             for (int i = 1; i < gaussians.length; ++i) {
-                float b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
+                double b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
                 result = LogMath.logSum(result, b);
             }
             return result;
@@ -209,29 +186,20 @@ public class GmmTestFloat {
 
         static final float _SCALE = 1000.0f;
 
-        static float[] logSumLookup = new float[20000];
+        static double[] logSumLookup = new double[20000];
 
         static {
             for (int i = 0; i < logSumLookup.length; i++) {
-                logSumLookup[i] = (float) Math.log(1.0 + Math.exp(-i / _SCALE));
+                logSumLookup[i] = Math.log(1.0 + Math.exp(-i / _SCALE));
             }
         }
 
-        /**
-         * Calculates an approximation of log(a+b) when log(a) and log(b) are given using the formula
-         * log(a+b) = log(b) + log(1 + exp(log(a)-log(b))) where log(b)>log(a)
-         * This method is an approximation because it uses a lookup table for log(1 + exp(log(b)-log(a))) part
-         * This is useful for log-probabilities where values vary between -30 < log(p) <= 0
-         * if difference between values is larger than 20 (which means sum of the numbers will be very close to the larger
-         * value in linear domain) large value is returned instead of the logSum calculation because effect of the other
-         * value is negligible
-         */
-        static float logSum(float logA, float logB) {
+        static double logSum(double logA, double logB) {
             if (logA > logB) {
-                float dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
+                double dif = logA - logB; // logA-logB because during lookup calculation dif is multiplied with -1
                 return dif >= 20.0 ? logA : logA + logSumLookup[(int) (dif * _SCALE)];
             } else {
-                float dif = logB - logA;
+                double dif = logB - logA;
                 return dif >= 20.0 ? logB : logB + logSumLookup[(int) (dif * _SCALE)];
             }
         }

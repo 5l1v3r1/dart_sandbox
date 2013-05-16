@@ -117,13 +117,11 @@ public class GmmTestDouble {
 
     static class DiagonalGaussian {
         double[] means;
-        double[] variances;
         double[] negativeHalfPrecisions;
         double C;
 
         DiagonalGaussian(double[] means, double[] variances) {
             this.means = means;
-            this.variances = variances;
             // instead of using [-0.5 * 1/var[d]] during likelihood calculation we pre-compute the values.
             // This saves 1 mul 1 div operation.
             negativeHalfPrecisions = new double[variances.length];
@@ -140,17 +138,6 @@ public class GmmTestDouble {
         }
 
         /// Calculates linear likelihood of a given vector.
-        double likelihood(double[] data) {
-            double result = 1.0;
-            for (int i = 0; i < means.length; i++) {
-                double meanDif = data[i] - means[i];
-                result *= (1 / Math.sqrt(2 * Math.PI * variances[i])) *
-                        Math.exp(-0.5 * meanDif * meanDif / variances[i]);
-            }
-            return result;
-        }
-
-        /// Calculates linear likelihood of a given vector.
         double logLikelihood(double[] data) {
             double res = 0.0;
             for (int i = 0; i < means.length; i++) {
@@ -164,12 +151,10 @@ public class GmmTestDouble {
 
     static class Gmm {
 
-        double[] mixtureWeights;
         double[] logMixtureWeights;
         DiagonalGaussian[] gaussians;
 
         Gmm(double[] mixtureWeights, DiagonalGaussian[] gaussians) {
-            this.mixtureWeights = mixtureWeights;
             this.gaussians = gaussians;
             logMixtureWeights = new double[mixtureWeights.length];
             for (int i = 0; i < mixtureWeights.length; i++) {
@@ -177,27 +162,19 @@ public class GmmTestDouble {
             }
         }
 
-        double scoreLinear(double[] data) {
-            double sum = 0.0;
-            for (int i = 0; i < gaussians.length; ++i) {
-                sum += mixtureWeights[i] * gaussians[i].likelihood(data);
-            }
-            return sum;
-        }
-
         double scoreLog(double[] data) {
-            double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+            double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
             for (int i = 1; i < gaussians.length; ++i) {
-                double b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
+                double b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
                 result = b + Math.log(1 + Math.exp(result - b));
             }
             return result;
         }
 
         double scoreLogSum(double[] data) {
-            double result = mixtureWeights[0] + gaussians[0].logLikelihood(data);
+            double result = logMixtureWeights[0] + gaussians[0].logLikelihood(data);
             for (int i = 1; i < gaussians.length; ++i) {
-                double b = mixtureWeights[i] + gaussians[i].logLikelihood(data);
+                double b = logMixtureWeights[i] + gaussians[i].logLikelihood(data);
                 result = LogMath.logSum(result, b);
             }
             return result;
