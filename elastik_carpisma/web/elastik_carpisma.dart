@@ -12,14 +12,14 @@ num rasgele(num max) => random.nextDouble() * max;
 class ElastikCarpismaDemosu {
 
   Oda oda;
-  static const TOP_SAYISI = 50;
+  static const TOP_SAYISI = 20;
   List<Top> toplar = new List<Top>();
 
   CanvasRenderingContext2D yuzey;
 
   ElastikCarpismaDemosu() {
     // elastik_carpisma.html içerisindeki "canvas" element'ini getir.
-    CanvasElement kanvas = document.query("#canvas");
+    CanvasElement kanvas = document.querySelector("#canvas");
     yuzey = kanvas.context2D;
 
     oda = new Oda.fromRect(kanvas.client);
