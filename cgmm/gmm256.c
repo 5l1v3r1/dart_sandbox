@@ -119,20 +119,21 @@ static inline float __reduce_add_ps(__m256 x){
 	return _mm_cvtss_f32(x32);
 }
  
-static inline float log_likelihood(gaussian *gauss, __m256 *input) {	
+static inline float log_likelihood(gaussian *gauss, float *input) {	
 	int i;
 	__m256 result = _mm256_setzero_ps();
-  
 	for(i = 0; i<gauss->aligned_size; i++) {
-		const __m256 dif = _mm256_sub_ps(input[i], gauss->means[i]);
+		const __m256 input256 = _mm256_load_ps(&input[i*BYTE_COUNT]);
+		const __m256 dif = _mm256_sub_ps(input256, gauss->means[i]);
 		const __m256 square = _mm256_mul_ps(dif, dif);
 		const __m256 mul_presicion = _mm256_mul_ps(square, gauss->presicions[i]);
 		result = _mm256_add_ps(result, mul_presicion);
 	}
+	//printf(".");	
 	return __reduce_add_ps(result) + gauss->c;
 }
  
-float score_gmm (int gmm_index, __m256 *input) {
+float score_gmm (int gmm_index, float *input) {
  
 	gmm *g = &gmms[gmm_index];	
 	const float *mixtures = g->mixture_weights;
@@ -211,7 +212,7 @@ void check_alloc(int i) {
  
 void test_simd256() {
 	int gmm_count = 1000;
-	int dimension = 40;
+	int dimension = 100;
 	int gauss_count = 32;
 	int input_amount = 1000;
 	int batch_size = 8;
@@ -219,37 +220,37 @@ void test_simd256() {
 	initialize_logsum();
 
 	initialize(gmm_count);
-	printf("gmms allocated\n");
+    printf("gmms allocated\n");
     
-	// prepare gmms
+    // prepare gmms
     
-	float mi = -0.00033f;
+    float mi = -0.00033f;
 	float mi_start = -0.001f;
 	
 	int i,k,z;
  
-	for(i = 0; i < gmm_count; ++i) {
-		float *mixtures = malloc(sizeof(float) * gauss_count);    	  	
-		for(k = 0; k < gauss_count; ++k) {
-			mixtures[k] = mi_start + (float)k * mi;
-		}
-		mi_start+=mi;	   	
-		initialize_gmm(i, gauss_count, mixtures);
+    for(i = 0; i < gmm_count; ++i) {
+    	float *mixtures = malloc(sizeof(float) * gauss_count);    	  	
+    	for(k = 0; k < gauss_count; ++k) {
+    		mixtures[k] = mi_start + (float)k * mi;
+	   	}
+	   	mi_start+=mi;	   	
+	   	initialize_gmm(i, gauss_count, mixtures);
 	}	
  
 	// prepare gaussians
 	
-	float ma = -0.00011f;
+    float ma = -0.00011f;
 	float ma_start = -0.003f;
 	float pa = -0.00025f;
 	float pa_start = -0.007f;
 	
-	for(i = 0; i < gmm_count; ++i) {
-		for(k = 0; k < gauss_count; ++k) {
-			float *means = malloc(sizeof(float) * dimension);
-			float *presicions = malloc(sizeof(float) * dimension);
-			for(z = 0; z < dimension ; ++z) {
-				means[z] = ma_start + (float)z * ma;
+    for(i = 0; i < gmm_count; ++i) {
+    	for(k = 0; k < gauss_count; ++k) {
+	  		float *means = malloc(sizeof(float) * dimension);
+	   		float *presicions = malloc(sizeof(float) * dimension);
+	   		for(z = 0; z < dimension ; ++z) {
+	   			means[z] = ma_start + (float)z * ma;
 	   			presicions[z] = pa_start + (float)z * pa;
 	   		}
 	   		ma_start+=ma;
@@ -263,21 +264,23 @@ void test_simd256() {
 	float **input = malloc(sizeof(float*) * input_amount);
 	
 	for(i=0; i<input_amount; ++i) {
-		input[i] = malloc(sizeof(float) * dimension);
+      check_alloc(posix_memalign((void*)&input[i], ALIGNMENT, sizeof(__m256) * (dimension/BYTE_COUNT)));	
+	
+	  //input[i] = malloc(sizeof(float) * dimension);
 	}
 	
-	float ia = 0.0011f;
+    float ia = 0.0011f;
 	float ia_start = -0.75f;
 	
 	for(i = 0; i < input_amount; ++i) {			
 		for(k = 0; k < dimension; ++k) {
-			input[i][k] = ia_start + (float)k * ia;
+		  input[i][k] = ia_start + (float)k * ia;
 		}
 		ia_start+=ia;
 	}
 	
 	// run test
-	clock_t start = clock(), diff;	
+    clock_t start = clock(), diff;	
 	float result = 0.0f;
 	for(i = 0; i < input_amount; i+=batch_size) {			
 		for(k = 0; k < gmm_count; ++k) {
@@ -286,8 +289,8 @@ void test_simd256() {
 				if(b+i>=input_amount) {				
 					break;
 				}			
-				__m256 *i256 = convert_input(&input[i+b][0], dimension);
-				result+= score_gmm(k, i256);               
+               //__m256 *i256 = convert_input(&input[i+b][0], dimension);
+				result+= score_gmm(k, &input[i+b][0]);               
 			}	
 		}
 	}
@@ -300,6 +303,6 @@ void test_simd256() {
 int main( int argc, char *argv[] )
 {   
 	test_simd256();		
-	return 0;
+    return 0;
 }
 

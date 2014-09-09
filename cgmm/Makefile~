@@ -1,6 +1,0 @@
-CFLAGS=-Wall -O3 -march=native -mtune=native -mavx gmm.c -o gmm -lm
-
-clean:
-	rm -rf gmm
-
-

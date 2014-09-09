@@ -144,6 +144,13 @@ void print_floats(float *floats, int amount) {
 	printf("]");	
 }
  
+void check_alloc(int i) {
+	if(i!=0) { 
+		printf("Allocation failure %d\n", i);
+		exit(i);
+	}
+}
+ 
 void test_linear() {
 	int gmm_count = 1000;
 	int dimension = 40;
@@ -163,24 +170,24 @@ void test_linear() {
 	
 	int i,k,z;
  
-	for(i = 0; i < gmm_count; ++i) {
-		float *mixtures = malloc(sizeof(float) * gauss_count);    	  	
-		for(k = 0; k < gauss_count; ++k) {
-			mixtures[k] = mi_start + (float)k * mi;
-		}
-		mi_start+=mi;	   	
-		initialize_gmm(i, gauss_count, mixtures);
+    for(i = 0; i < gmm_count; ++i) {
+    	float *mixtures = malloc(sizeof(float) * gauss_count);    	  	
+    	for(k = 0; k < gauss_count; ++k) {
+    		mixtures[k] = mi_start + (float)k * mi;
+	   	}
+	   	mi_start+=mi;	   	
+	   	initialize_gmm(i, gauss_count, mixtures);
 	}	
  
 	// prepare gaussians
 	
-	float ma = -0.00011f;
+    float ma = -0.00011f;
 	float ma_start = -0.003f;
 	float pa = -0.00025f;
 	float pa_start = -0.007f;
 	
-	for(i = 0; i < gmm_count; ++i) {
-		for(k = 0; k < gauss_count; ++k) {
+    for(i = 0; i < gmm_count; ++i) {
+    	for(k = 0; k < gauss_count; ++k) {
 	  		float *means = malloc(sizeof(float) * dimension);
 	   		float *presicions = malloc(sizeof(float) * dimension);
 	   		for(z = 0; z < dimension ; ++z) {
@@ -201,7 +208,7 @@ void test_linear() {
 	  input[i] = malloc(sizeof(float) * dimension);
 	}
 	
-	float ia = 0.0011f;
+    float ia = 0.0011f;
 	float ia_start = -0.75f;
 	
 	for(i = 0; i < input_amount; ++i) {			
@@ -212,7 +219,7 @@ void test_linear() {
 	}
 	
 	// run test
-	clock_t start = clock(), diff;	
+    clock_t start = clock(), diff;	
 	float result = 0.0f;
 	for(i = 0; i < input_amount; i+=batch_size) {			
 		for(k = 0; k < gmm_count; ++k) {
@@ -234,6 +241,6 @@ void test_linear() {
 int main( int argc, char *argv[] )
 {   
 	test_linear();		
-	return 0;
+    return 0;
 }
 

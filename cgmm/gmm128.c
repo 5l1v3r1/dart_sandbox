@@ -118,12 +118,13 @@ static inline float __reduce_add_ps(__m128 x){
 	return _mm_cvtss_f32(x);
 }
  
-static inline float log_likelihood(gaussian *gauss, __m128 *input) {	
+static inline float log_likelihood(gaussian *gauss, float *input) {	
 	int i;
 	__m128 result = _mm_setzero_ps();
   
 	for(i = 0; i<gauss->aligned_size; i++) {
-		const __m128 dif = _mm_sub_ps(input[i], gauss->means[i]);
+		const __m128 input128 = _mm_load_ps(&input[i*BYTE_COUNT]);
+		const __m128 dif = _mm_sub_ps(input128, gauss->means[i]);
 		const __m128 square = _mm_mul_ps(dif, dif);
 		const __m128 mul_presicion = _mm_mul_ps(square, gauss->presicions[i]);
 		result = _mm_add_ps(result, mul_presicion);
@@ -131,7 +132,7 @@ static inline float log_likelihood(gaussian *gauss, __m128 *input) {
 	return __reduce_add_ps(result) + gauss->c;
 }
  
-float score_gmm (int gmm_index, __m128 *input) {
+float score_gmm (int gmm_index, float *input) {
  
 	gmm *g = &gmms[gmm_index];	
 	const float *mixtures = g->mixture_weights;
@@ -175,20 +176,6 @@ void print_gaussian(int gmm_index, int gauss_index) {
 	printf("\n");		
 }
  
-__m128 * convert_input(float *input, int dimension) {
-	int k = dimension/BYTE_COUNT;
-	__m128 *result;
-	check_alloc(posix_memalign((void*)&result, ALIGNMENT, sizeof(__m128) * k));
-  
-	int i;		  
-	for(i = 0; i < k; ++i) {
-		float temp[BYTE_COUNT] __attribute((aligned(ALIGNMENT)));
-		memcpy(&temp, input, ALIGNMENT);
-		result[i] = _mm_load_ps(temp);
-	}
-	return result;
-}
- 
 void print_floats(float *floats, int amount) {
 	int i;
 	printf("[");
@@ -210,42 +197,42 @@ void check_alloc(int i) {
  
 void test_simd128() {
 	int gmm_count = 1000;
-	int dimension = 40;
+	int dimension = 100;
 	int gauss_count = 32;
 	int input_amount = 1000;
-	int batch_size = 12;
+	int batch_size = 8;
 	
 	initialize_logsum();
 	
 	initialize(gmm_count);
-	printf("gmms allocated\n");
+    printf("gmms allocated\n");
     
-	// prepare gmms
+    // prepare gmms
     
-	float mi = -0.00033f;
+    float mi = -0.00033f;
 	float mi_start = -0.001f;
 	
 	int i,k,z;
  
-	for(i = 0; i < gmm_count; ++i) {
-		float *mixtures = malloc(sizeof(float) * gauss_count);    	  	
-		for(k = 0; k < gauss_count; ++k) {
-			mixtures[k] = mi_start + (float)k * mi;
-		}
-		mi_start+=mi;	   	
-		   	initialize_gmm(i, gauss_count, mixtures);
+    for(i = 0; i < gmm_count; ++i) {
+    	float *mixtures = malloc(sizeof(float) * gauss_count);    	  	
+    	for(k = 0; k < gauss_count; ++k) {
+    		mixtures[k] = mi_start + (float)k * mi;
+	   	}
+	   	mi_start+=mi;	   	
+	   	initialize_gmm(i, gauss_count, mixtures);
 	}	
  
 	// prepare gaussians
 	
-	float ma = -0.00011f;
+    float ma = -0.00011f;
 	float ma_start = -0.003f;
 	float pa = -0.00025f;
 	float pa_start = -0.007f;
 	
-	for(i = 0; i < gmm_count; ++i) {
-		for(k = 0; k < gauss_count; ++k) {
-			float *means = malloc(sizeof(float) * dimension);
+    for(i = 0; i < gmm_count; ++i) {
+    	for(k = 0; k < gauss_count; ++k) {
+	  		float *means = malloc(sizeof(float) * dimension);
 	   		float *presicions = malloc(sizeof(float) * dimension);
 	   		for(z = 0; z < dimension ; ++z) {
 	   			means[z] = ma_start + (float)z * ma;
@@ -265,18 +252,18 @@ void test_simd128() {
 	  input[i] = malloc(sizeof(float) * dimension);
 	}
 	
-	float ia = 0.0011f;
+    float ia = 0.0011f;
 	float ia_start = -0.75f;
 	
 	for(i = 0; i < input_amount; ++i) {			
 		for(k = 0; k < dimension; ++k) {
-			input[i][k] = ia_start + (float)k * ia;
+		  input[i][k] = ia_start + (float)k * ia;
 		}
 		ia_start+=ia;
 	}
 	
 	// run test
-	clock_t start = clock(), diff;	
+    clock_t start = clock(), diff;	
 	float result = 0.0f;
 	for(i = 0; i < input_amount; i+=batch_size) {			
 		for(k = 0; k < gmm_count; ++k) {
@@ -285,8 +272,7 @@ void test_simd128() {
 				if(b+i>=input_amount) {				
 					break;
 				}					
-				__m128 *i128 = convert_input(&input[i+b][0], dimension);
-				result+= score_gmm(k, i128);               
+				result+= score_gmm(k, &input[i+b][0]);               
 			}	
 		}
 	}
@@ -299,6 +285,6 @@ void test_simd128() {
 int main( int argc, char *argv[] )
 {   
 	test_simd128();		
-	return 0;
+    return 0;
 }
 
